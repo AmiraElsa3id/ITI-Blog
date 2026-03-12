@@ -75,17 +75,17 @@ ITI Blog is a beautifully designed, modern blog application that demonstrates th
 
 <p align="center">
   <strong>Home Page</strong><br>
-  <img src="https://via.placeholder.com/800x400/FF2D20/FFFFFF?text=ITI+Blog+Home+Page" alt="Home Page" width="800">
+  <img src="./demo-images/home.png" alt="Home Page" width="800">
 </p>
 
 <p align="center">
   <strong>Posts Management</strong><br>
-  <img src="https://via.placeholder.com/800x400/4FC08D/FFFFFF?text=Posts+Management+Interface" alt="Posts Management" width="800">
+  <img src="./demo-images/posts.png" alt="Posts Management" width="800">
 </p>
 
 <p align="center">
   <strong>About Page</strong><br>
-  <img src="https://via.placeholder.com/800x400/06B6D4/FFFFFF?text=About+Page+Tech+Stack" alt="About Page" width="800">
+  <img src="./demo-images/about.png" alt="About Page" width="800">
 </p>
 
 ---
@@ -361,10 +361,10 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📞 Contact
 
-- **Author**: [Your Name]
-- **Email**: [your.email@example.com]
-- **LinkedIn**: [Your LinkedIn Profile]
-- **GitHub**: [Your GitHub Profile]
+- **Author**: [Amera Mohammed]
+- **Email**: [ameraelsa3id@gmail.com]
+- **LinkedIn**: [https://www.linkedin.com/in/amera-mohammed/]
+- **GitHub**: [https://github.com/AmiraElsa3id]
 
 ---
 
