@@ -15,7 +15,9 @@ Route::get('/about', function () {
 
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
-Route::put('/posts/{id}', [PostController::class, 'update'])->name('posts.update');
+// Route::post('/posts/{id}', [PostController::class, 'update'])->name('posts.update');
+// Route::put('/posts/{id}', [PostController::class, 'update'])->name('posts.update');
+Route::match(['PUT', 'POST'], '/posts/{id}', [PostController::class, 'update'])->name('posts.update');
 Route::delete('/posts/{id}', [PostController::class, 'destroy'])->name('posts.destroy');
 Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
 Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');

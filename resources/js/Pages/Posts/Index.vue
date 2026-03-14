@@ -38,7 +38,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { PenLine, Trash2, Eye, Plus, MessageCircle, User, Calendar } from 'lucide-vue-next'
+import { PenLine, Trash2, Eye, Plus, MessageCircle, Calendar, ImageIcon } from 'lucide-vue-next'
 
 const props = defineProps({
     posts: Object,
@@ -46,11 +46,11 @@ const props = defineProps({
 })
 
 // ─── Delete Warning Modal ──────────────────────────────────────────────────────
-const showDeleteDialog  = ref(false)
-const deletingPostId    = ref(null)
+const showDeleteDialog = ref(false)
+const deletingPostId   = ref(null)
 
 function confirmDelete(id) {
-    deletingPostId.value  = id
+    deletingPostId.value   = id
     showDeleteDialog.value = true
 }
 
@@ -110,10 +110,12 @@ const createForm = useForm({
     title: '',
     description: '',
     user_id: '',
+    image: null,
 })
 
 function submitCreate() {
     createForm.post(route('posts.store'), {
+        forceFormData: true,
         onSuccess: () => {
             showCreateDialog.value = false
             createForm.reset()
@@ -129,6 +131,7 @@ const editForm = useForm({
     title: '',
     description: '',
     user_id: '',
+    image: null,
 })
 
 function openEdit(post) {
@@ -136,15 +139,22 @@ function openEdit(post) {
     editForm.title       = post.title
     editForm.description = post.description
     editForm.user_id     = String(post.user_id)
+    editForm.image       = null
     showEditDialog.value = true
 }
 
 function submitEdit() {
-    editForm.put(route('posts.update', editingPost.value.id), {
-        onSuccess: () => {
-            showEditDialog.value = false
-        },
-    })
+    editForm
+        .transform(data => ({
+            ...data,
+            _method: 'PUT',
+        }))
+        .post(route('posts.update', editingPost.value.id), {
+            forceFormData: true,
+            onSuccess: () => {
+                showEditDialog.value = false
+            },
+        })
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
@@ -183,7 +193,9 @@ function goToPage(url) {
                     <TableHeader>
                         <TableRow class="bg-gray-50">
                             <TableHead class="font-semibold text-gray-700">#</TableHead>
+                            <TableHead class="font-semibold text-gray-700">Image</TableHead>
                             <TableHead class="font-semibold text-gray-700">Title</TableHead>
+                            <TableHead class="font-semibold text-gray-700">Slug</TableHead>
                             <TableHead class="font-semibold text-gray-700">Posted By</TableHead>
                             <TableHead class="font-semibold text-gray-700">Created At</TableHead>
                             <TableHead class="font-semibold text-gray-700">Actions</TableHead>
@@ -192,7 +204,23 @@ function goToPage(url) {
                     <TableBody>
                         <TableRow v-for="post in posts.data" :key="post.id" class="hover:bg-gray-50 transition">
                             <TableCell class="text-gray-400 text-sm">{{ post.id }}</TableCell>
+                            <TableCell>
+                                <img
+                                    v-if="post.image"
+                                    :src="`/storage/${post.image}`"
+                                    class="w-10 h-10 rounded-lg object-cover"
+                                    alt="Post image"
+                                />
+                                <div v-else class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <ImageIcon class="w-4 h-4 text-gray-400" />
+                                </div>
+                            </TableCell>
                             <TableCell class="font-medium text-gray-800">{{ post.title }}</TableCell>
+                            <TableCell>
+                                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg font-mono">
+                                    {{ post.slug }}
+                                </span>
+                            </TableCell>
                             <TableCell>
                                 <div class="flex items-center gap-2">
                                     <div class="w-7 h-7 bg-gradient-to-br from-red-400 to-rose-400 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -239,54 +267,6 @@ function goToPage(url) {
                 </div>
             </div>
 
-            <!-- Delete Post Warning Modal -->
-            <!-- <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle class="flex items-center gap-2 text-red-600">
-                            <Trash2 class="w-5 h-5" />
-                            Delete Post
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete this post? This action cannot be undone and will also remove all comments.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            class="bg-red-600 hover:bg-red-700 text-white"
-                            @click="executeDelete"
-                        >
-                            Yes, Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog> -->
-
-            <!-- Delete Comment Warning Modal -->
-            <!-- <AlertDialog :open="showDeleteCommentDialog" @update:open="showDeleteCommentDialog = $event">
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle class="flex items-center gap-2 text-red-600">
-                            <Trash2 class="w-5 h-5" />
-                            Delete Comment
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete this comment? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            class="bg-red-600 hover:bg-red-700 text-white"
-                            @click="executeDeleteComment"
-                        >
-                            Yes, Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog> -->
-
             <!-- View Dialog -->
             <Dialog :open="showViewDialog" @update:open="showViewDialog = $event">
                 <DialogContent class="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -295,9 +275,18 @@ function goToPage(url) {
                     </DialogHeader>
                     <div v-if="viewingPost" class="space-y-4">
 
+                        <!-- Post Image -->
+                        <img
+                            v-if="viewingPost.image"
+                            :src="`/storage/${viewingPost.image}`"
+                            class="w-full rounded-xl object-cover max-h-48"
+                            alt="Post image"
+                        />
+
                         <!-- Post Info -->
                         <div class="bg-gray-50 rounded-xl p-4 space-y-3">
                             <h3 class="font-semibold text-gray-900 text-lg">{{ viewingPost.title }}</h3>
+                            <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-lg font-mono">{{ viewingPost.slug }}</span>
                             <p class="text-gray-600 text-sm leading-relaxed">{{ viewingPost.description }}</p>
                         </div>
 
@@ -331,7 +320,9 @@ function goToPage(url) {
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
+                                <p v-if="commentForm.errors.user_id" class="text-red-500 text-xs">{{ commentForm.errors.user_id }}</p>
                                 <Textarea v-model="commentForm.body" placeholder="Write a comment..." class="resize-none" />
+                                <p v-if="commentForm.errors.body" class="text-red-500 text-xs">{{ commentForm.errors.body }}</p>
                                 <Button
                                     size="sm"
                                     class="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white"
@@ -382,16 +373,28 @@ function goToPage(url) {
                     <div class="space-y-4">
                         <div class="space-y-1">
                             <Label>Title</Label>
-                            <Input v-model="createForm.title" placeholder="Post title" />
+                            <Input
+                                v-model="createForm.title"
+                                placeholder="Post title"
+                                :class="createForm.errors.title ? 'border-red-500' : ''"
+                            />
+                            <p v-if="createForm.errors.title" class="text-red-500 text-xs">{{ createForm.errors.title }}</p>
                         </div>
                         <div class="space-y-1">
                             <Label>Description</Label>
-                            <Textarea v-model="createForm.description" placeholder="Post description" class="resize-none" rows="4" />
+                            <Textarea
+                                v-model="createForm.description"
+                                placeholder="Post description"
+                                class="resize-none"
+                                rows="4"
+                                :class="createForm.errors.description ? 'border-red-500' : ''"
+                            />
+                            <p v-if="createForm.errors.description" class="text-red-500 text-xs">{{ createForm.errors.description }}</p>
                         </div>
                         <div class="space-y-1">
                             <Label>Creator</Label>
                             <Select v-model="createForm.user_id">
-                                <SelectTrigger>
+                                <SelectTrigger :class="createForm.errors.user_id ? 'border-red-500' : ''">
                                     <SelectValue placeholder="Select a user" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -400,6 +403,17 @@ function goToPage(url) {
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
+                            <p v-if="createForm.errors.user_id" class="text-red-500 text-xs">{{ createForm.errors.user_id }}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <Label>Image <span class="text-gray-400 text-xs">(jpg, png only)</span></Label>
+                            <Input
+                                type="file"
+                                accept=".jpg,.png"
+                                :class="createForm.errors.image ? 'border-red-500' : ''"
+                                @change="e => createForm.image = e.target.files[0]"
+                            />
+                            <p v-if="createForm.errors.image" class="text-red-500 text-xs">{{ createForm.errors.image }}</p>
                         </div>
                     </div>
                     <DialogFooter>
@@ -426,16 +440,26 @@ function goToPage(url) {
                     <div class="space-y-4">
                         <div class="space-y-1">
                             <Label>Title</Label>
-                            <Input v-model="editForm.title" />
+                            <Input
+                                v-model="editForm.title"
+                                :class="editForm.errors.title ? 'border-red-500' : ''"
+                            />
+                            <p v-if="editForm.errors.title" class="text-red-500 text-xs">{{ editForm.errors.title }}</p>
                         </div>
                         <div class="space-y-1">
                             <Label>Description</Label>
-                            <Textarea v-model="editForm.description" class="resize-none" rows="4" />
+                            <Textarea
+                                v-model="editForm.description"
+                                class="resize-none"
+                                rows="4"
+                                :class="editForm.errors.description ? 'border-red-500' : ''"
+                            />
+                            <p v-if="editForm.errors.description" class="text-red-500 text-xs">{{ editForm.errors.description }}</p>
                         </div>
                         <div class="space-y-1">
                             <Label>Creator</Label>
                             <Select v-model="editForm.user_id">
-                                <SelectTrigger>
+                                <SelectTrigger :class="editForm.errors.user_id ? 'border-red-500' : ''">
                                     <SelectValue placeholder="Select a user" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -444,6 +468,26 @@ function goToPage(url) {
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
+                            <p v-if="editForm.errors.user_id" class="text-red-500 text-xs">{{ editForm.errors.user_id }}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <Label>Image <span class="text-gray-400 text-xs">(leave empty to keep current)</span></Label>
+                            <!-- show current image -->
+                            <div v-if="editingPost?.image" class="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                                <img
+                                    :src="`/storage/${editingPost.image}`"
+                                    class="w-12 h-12 rounded-lg object-cover"
+                                    alt="Current image"
+                                />
+                                <span class="text-xs text-gray-500">Current image</span>
+                            </div>
+                            <Input
+                                type="file"
+                                accept=".jpg,.png"
+                                :class="editForm.errors.image ? 'border-red-500' : ''"
+                                @change="e => editForm.image = e.target.files[0]"
+                            />
+                            <p v-if="editForm.errors.image" class="text-red-500 text-xs">{{ editForm.errors.image }}</p>
                         </div>
                     </div>
                     <DialogFooter>
@@ -458,54 +502,53 @@ function goToPage(url) {
                 </DialogContent>
             </Dialog>
 
+            <!-- Delete Post Warning Modal — LAST -->
+            <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
+                <AlertDialogContent class="z-[100]">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle class="flex items-center gap-2 text-red-600">
+                            <Trash2 class="w-5 h-5" />
+                            Delete Post
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this post? This action cannot be undone and will also remove all comments.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            class="bg-red-600 hover:bg-red-700 text-white"
+                            @click="executeDelete"
+                        >
+                            Yes, Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
-        <!-- Delete Post Warning Modal — LAST -->
-        <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
-            <AlertDialogContent class="z-[100]">
-                <AlertDialogHeader>
-                    <AlertDialogTitle class="flex items-center gap-2 text-red-600">
-                        <Trash2 class="w-5 h-5" />
-                        Delete Post
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Are you sure you want to delete this post? This action cannot be undone and will also remove all comments.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        class="bg-red-600 hover:bg-red-700 text-white"
-                        @click="executeDelete"
-                    >
-                        Yes, Delete
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <!-- Delete Comment Warning Modal — LAST -->
-        <AlertDialog :open="showDeleteCommentDialog" @update:open="showDeleteCommentDialog = $event">
-            <AlertDialogContent class="z-[100]">
-                <AlertDialogHeader>
-                    <AlertDialogTitle class="flex items-center gap-2 text-red-600">
-                        <Trash2 class="w-5 h-5" />
-                        Delete Comment
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Are you sure you want to delete this comment? This action cannot be undone.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        class="bg-red-600 hover:bg-red-700 text-white"
-                        @click="executeDeleteComment"
-                    >
-                        Yes, Delete
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+            <!-- Delete Comment Warning Modal — LAST -->
+            <AlertDialog :open="showDeleteCommentDialog" @update:open="showDeleteCommentDialog = $event">
+                <AlertDialogContent class="z-[100]">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle class="flex items-center gap-2 text-red-600">
+                            <Trash2 class="w-5 h-5" />
+                            Delete Comment
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this comment? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            class="bg-red-600 hover:bg-red-700 text-white"
+                            @click="executeDeleteComment"
+                        >
+                            Yes, Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
         </div>
     </AppLayout>
